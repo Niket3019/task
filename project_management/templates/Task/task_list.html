@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Task Management</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/lux/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+
+<body class="bg-light">
+    
+    <div class="container mt-5">
+        
+    <div class="card">
+        
+        
+        <div style= "background-color:#007bff">
+            <h1 class="text-center">Task Management</h1>
+            
+        </div>
+        <div class="card-body">
+        <table id="taskTable" class="table table-bordered table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Start Date</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                    <th>Assignee</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>{{ task.title }}</td>
+                    <td>{{ task.description }}</td>
+                    <td>{{ task.start_date }}</td>
+                    <td>{{ task.deadline }}</td>
+                    <td>{{ task.status }}</td>
+                    <td>{{ task.assignee.first_name }}</td>
+                    <td>
+                        <a href="{% url 'edit_task' task_id=task.id %}" class="btn btn-sm btn-info mr-2">Edit</a>
+                        <button class="deleteButton btn btn-sm btn-danger" data-delete-id="{{ task.id }}">Delete</button>
+
+               
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/tasks/add/" style= "background-color:#007bff" class="btn btn-primary btn-sm mr-2">Add Projects</a>
+        <a href="/tasks/api/add_projects/" style= "background-color:#007bff" class="btn btn-primary btn-sm">Add Task</a>
+    </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#taskTable').DataTable();
+        });
+        $(document).on("click", ".deleteButton", function (event) {
+            event.preventDefault();
+            
+            var deleteButton = $(this);
+            
+            var deleteId = deleteButton.data("delete-id");
+            var deleteUrl = '/tasks/add/';
+            $.ajax({
+                url: deleteUrl,
+                method: 'DELETE',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify({ task_id: deleteId }),
+                success: function (response) {
+                    toastr.success(response.status);
+                    deleteButton.closest('tr').remove();
+                },
+                window.location.href = '{% url "task_list" %}';
+                error: function (xhr, status, error) {
+                    console.error(xhr.responseText);
+                    toastr.error('Error occurred while deleting.');
+                }
+            });
+        });
+        
+        
+    </script>
+</body>
+
+</html>

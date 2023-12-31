@@ -1,0 +1,169 @@
+<!-- projects_frontend.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Project Management</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+</head>
+
+<body class="bg-light" onload="initializePage()">
+        <div class = "container mt-5">
+            <div class="card">
+            <div class = "card-header bg-primary text-white">
+                <h1 class="text-center">Project Management</h1>
+            </div>
+            <div class="card-body">
+                <input type="hidden" id="task_id" value="{% if is_edit %}{{ task_details.id }}{% endif %}">
+                <form id="project-form" class="row" data-action="{% if is_edit %}edit{% else %}add{% endif %}">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="add_detail">Project:</label>
+                            <select name="add_detail" id="add_detail" class="form-control" onchange="getDetailProject()" required>                                
+                                {% for user in projects %}
+                                    <option value="{{ user.id }}" {% if task_details.project.name == user.name %}selected{% endif %}>{{ user.name }}</option>
+                                {% endfor %}   
+                                <option value="">--</option>       
+                            </select>
+                            
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" style="display:none">
+                        <div class="form-group description">
+
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" style="display:none">
+                        <div class="form-group start_date">
+
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" style="display:none">
+                        <div class="form-group end_date">
+
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" style="display:none">
+                        <div class="form-group title">
+
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="user_detail">Assigned To:</label>
+                            <select name="user_detail" id="user_detail" class="form-control" required>
+                                {% if is_edit %}
+                                <option value="{{ task_details.assignee.id }}">{{ task_details.assignee.first_name }}</option>
+                                {% else %}
+                                
+                                {% for user in user_obj %}
+                                
+                                <option value="{{ user.id }}">{{ user.first_name }}</option>
+                                {% endfor %}
+                               
+                                {% endif %}
+                                
+                            </select>
+                            <a href="/tasks/add_team_member/" id="addNewMemberLink">Add New Team Member</a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="status">Status:</label>
+                            <select name="status" id="status" class="form-control">
+                                <option value="To Do" {% if task_details.status == 'To Do' %}selected{% endif %}>To Do</option>
+                                <option value="In Progress" {% if task_details.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if task_details.status == 'Completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <button type="button" onclick="submitProject()" class="btn btn-primary">Add Project</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        toastr.options = {
+            "positionClass": "toast-top-center",
+        };
+        function initializePage() {
+            getDetailProject(); 
+        }
+        function submitProject() {
+
+            var projectData = {
+                action: $('#project-form').data('action'),
+                project_id: $('#add_detail').val(),
+                description: $('#description').val(),
+                start_date: $('#start_date').val(),
+                end_date: $('#end_date').val(),
+                assigned_to: $('#user_detail').val(),
+                title: $('#title').val(),
+                status: $('#status').val(),
+            };
+            var url = '/tasks/add/';
+            if (projectData.action === 'edit') {
+                var taskId = $('#task_id').val();
+
+                url = '/tasks/api/edit_task/' + taskId + '/';
+            }
+            $.ajax({
+                url: url,
+                method: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(projectData),
+                success: function (response) {
+                    $('#project-form')[0].reset();
+                        toastr.success(response.status);
+                },
+                window.location.href = '{% url "task_list" %}';
+                error: function (error) {
+                    if (error.responseJSON.status) {
+                    toastr.error(error.responseJSON.status);
+                    }
+                    else{
+                        toastr.error("Something Went Wrong");
+                    }
+                }
+               
+            });
+        }
+
+        function getDetailProject() {
+            var projectId = $('#add_detail').val();
+            $.ajax({
+                url: '/tasks/projects/' + projectId,
+                method: 'GET',
+                dataType: 'json',
+                contentType: 'application/json',
+
+                success: function (data) {
+                    $('.description').html('<label for="description" class="mt-2">Description:</label><textarea id="description" name="description" class="form-control" required>' + data.description + '</textarea><br>');
+                    $('.start_date').html('<label for="start_date" class="mt-2">Start Date:</label><input type="date" id="start_date" name="start_date" class="form-control" required value="' + data.start_date + '"><br>');
+                    $('.end_date').html('<label for="end_date" class="mt-2">End Date:</label><input type="date" id="end_date" name="end_date" class="form-control" required value="' + data.end_date + '"><br>');
+                    $('.title').html('<label for="title" class="mt-2">Title:</label><input type="text" id="title" name="title" class="form-control" required value="' + data.name + '"><br>');
+                    $('.description, .start_date, .end_date, .title').parent().css('display', 'block');
+                },
+                error: function (error) {
+                    toastr.error('Something went wrong');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
